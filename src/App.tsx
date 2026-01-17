@@ -1,35 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useTradingStore, useStrategyStore } from "@/stores";
+import Landing from "./pages/Landing";
+import Index from "./pages/Index";
+import Strategy from "./pages/Strategy";
+import Analytics from "./pages/Analytics";
+import History from "./pages/History";
+import Settings from "./pages/Settings";
+import NotFound from "./pages/NotFound";
+import { ThemeProvider } from "./components/provider/ThemeProvider";
 
-function App() {
-  const [count, setCount] = useState(0)
+const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const initializeMockData = useTradingStore((s) => s.initializeMockData);
+  const initializeMockStrategies = useStrategyStore(
+    (s) => s.initializeMockStrategies
+  );
+
+  useEffect(() => {
+    initializeMockData();
+    initializeMockStrategies();
+  }, [initializeMockData, initializeMockStrategies]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/dashboard" element={<Index />} />
+        <Route path="/strategy" element={<Strategy />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
 
-export default App
+const App = () => (
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
+);
+
+export default App;
