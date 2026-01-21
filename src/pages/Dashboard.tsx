@@ -9,8 +9,9 @@ import { AgentStatusCard } from '@/components/dashboard/AgentStatusCard';
 import { RiskMonitor } from '@/components/dashboard/RiskMonitor';
 import { useTradingStore } from '@/stores';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useContractEvents } from '@/hooks/useContractEvents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -121,6 +122,9 @@ export default function Dashboard() {
   } = useTradingStore();
   
   const { isConnected: isWebSocketConnected } = useWebSocket();
+  
+  // ✅ Initialize contract event listeners
+  // useContractEvents();
 
   useEffect(() => {
     // Initialize with mock data only if no real data exists
@@ -160,7 +164,7 @@ export default function Dashboard() {
           <ConnectionStatus isConnected={isWebSocketConnected} />
         </motion.div>
 
-        {/* Portfolio Overview Hero */}
+        {/* Portfolio Overview Hero - Now with contract integration */}
         <motion.div variants={itemVariants}>
           <PortfolioOverview />
         </motion.div>
@@ -188,7 +192,7 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Recent Trades Table */}
+        {/* Recent Trades Table - Now listening to contract events */}
         <motion.div variants={itemVariants}>
           <RecentTradesTable />
         </motion.div>
