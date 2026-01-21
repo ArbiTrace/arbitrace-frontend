@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { PortfolioOverview } from '@/components/dashboard/PortfolioOverview';
@@ -10,6 +10,8 @@ import { RiskMonitor } from '@/components/dashboard/RiskMonitor';
 import { useTradingStore } from '@/stores';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // Animation Variants
@@ -47,17 +49,63 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Portfolio Overview Skeleton */}
-      <Skeleton className="h-[180px] w-full rounded-xl" />
+      <Skeleton className="h-50 w-full rounded-xl" />
+
+      {/* Status Cards Row Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Skeleton className="h-75 rounded-xl" />
+        <Skeleton className="h-75 rounded-xl" />
+      </div>
 
       {/* Main Grid Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Skeleton className="h-[400px] lg:col-span-1 rounded-xl" />
-        <Skeleton className="h-[400px] lg:col-span-2 rounded-xl" />
+        <Skeleton className="h-100 lg:col-span-1 rounded-xl" />
+        <Skeleton className="h-100 lg:col-span-2 rounded-xl" />
       </div>
 
       {/* Recent Trades Skeleton */}
-      <Skeleton className="h-[500px] w-full rounded-xl" />
+      <Skeleton className="h-125 w-full rounded-xl" />
     </div>
+  );
+}
+
+// ============================================================================
+// Connection Status Banner
+// ============================================================================
+
+function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
+  if (isConnected) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="bg-success/10 border border-success/30 rounded-lg px-4 py-3 flex items-center gap-3"
+      >
+        <Wifi className="h-4 w-4 text-success" />
+        <p className="text-sm text-success font-medium">
+          Connected to agent • Live data streaming
+        </p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-3"
+    >
+      <WifiOff className="h-4 w-4 text-warning" />
+      <div className="flex-1">
+        <p className="text-sm text-warning font-medium">
+          Reconnecting to agent...
+        </p>
+        <p className="text-xs text-warning/70 mt-0.5">
+          Real-time updates are temporarily unavailable
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -66,15 +114,32 @@ function DashboardSkeleton() {
 // ============================================================================
 
 export default function Dashboard() {
-  const { isLoading, initializeData, agentStatus } = useTradingStore();
+  const { 
+    agentStatus, 
+    isConnectedToAgent,
+    initializeMockData, // Only for initial demo data
+  } = useTradingStore();
+  
   const { isConnected: isWebSocketConnected } = useWebSocket();
 
   useEffect(() => {
-    // Initialize dashboard data
-    initializeData();
-  }, [initializeData]);
+    // Initialize with mock data only if no real data exists
+    // This will be replaced by real data as soon as WebSocket connects
+    if (!isConnectedToAgent) {
+      initializeMockData();
+    }
+  }, [isConnectedToAgent, initializeMockData]);
 
-  if (isLoading) {
+  // Show loading state only on initial mount
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    // Remove loading state after a brief delay
+    const timer = setTimeout(() => setIsInitialLoad(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isInitialLoad) {
     return (
       <Layout>
         <DashboardSkeleton />
@@ -90,19 +155,10 @@ export default function Dashboard() {
         animate="visible"
         className="space-y-6"
       >
-        {/* WebSocket Status Indicator */}
-        {!isWebSocketConnected && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-3"
-          >
-            <div className="w-2 h-2 rounded-full bg-warning animate-pulse" />
-            <p className="text-sm text-warning font-medium">
-              Reconnecting to live data feed...
-            </p>
-          </motion.div>
-        )}
+        {/* Connection Status Banner */}
+        <motion.div variants={itemVariants}>
+          <ConnectionStatus isConnected={isWebSocketConnected} />
+        </motion.div>
 
         {/* Portfolio Overview Hero */}
         <motion.div variants={itemVariants}>
@@ -140,15 +196,39 @@ export default function Dashboard() {
         {/* Footer Info */}
         <motion.div
           variants={itemVariants}
-          className="text-center text-sm text-muted-foreground py-4"
+          className="text-center text-sm text-muted-foreground py-4 border-t border-border/30"
         >
-          <p>
-            Agent Status: <span className="text-foreground font-medium">{agentStatus.status}</span>
-            {' • '}
-            Last Updated: <span className="text-foreground font-medium">
-              {new Date(agentStatus.lastUpdate).toLocaleTimeString()}
-            </span>
-          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Agent:</span>
+              <span className={cn(
+                'font-medium',
+                agentStatus.status === 'active' && 'text-success',
+                agentStatus.status === 'paused' && 'text-warning',
+                agentStatus.status === 'error' && 'text-destructive',
+              )}>
+                {agentStatus.status.charAt(0).toUpperCase() + agentStatus.status.slice(1)}
+              </span>
+            </div>
+            
+            {agentStatus.aiEngine && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">AI Engine:</span>
+                <span className="font-medium text-foreground">
+                  {agentStatus.aiEngine}
+                </span>
+              </div>
+            )}
+            
+            {agentStatus.lastUpdate && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Last Update:</span>
+                <span className="font-medium text-foreground font-mono">
+                  {new Date(agentStatus.lastUpdate).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+          </div>
         </motion.div>
       </motion.div>
     </Layout>

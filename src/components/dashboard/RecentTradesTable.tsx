@@ -243,6 +243,7 @@ export function RecentTradesTable() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  console.log('trades', trades)
   const filteredAndSortedTrades = useMemo(() => {
     let result = filterTrades(trades, filterStatus);
 

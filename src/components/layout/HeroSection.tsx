@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ChevronRight } from "lucide-react";
 import {DashboardPreview} from "./DashboardPreview";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 // ============================================================================
 // Animation Variants
@@ -31,6 +32,7 @@ export function HeroSection() {
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const { isConnected } = useAppKitAccount();
 
   return (
     <section className="relative z-10 container mx-auto px-4 pt-32 pb-24 lg:pt-40 lg:pb-32">
@@ -82,6 +84,7 @@ export function HeroSection() {
           variants={fadeInUp}
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
+          {isConnected && (
           <Link to="/dashboard">
             <Button
               size="lg"
@@ -91,6 +94,7 @@ export function HeroSection() {
               <ChevronRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
+          )}
           <Button
             size="lg"
             variant="outline"

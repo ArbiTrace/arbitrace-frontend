@@ -5,11 +5,13 @@ import { Button } from "../ui/button";
 import { ArrowRight, Menu, X, Zap } from "lucide-react";
 import { ThemeToggle } from "../ThemeToggle";
 import { cn } from "@/lib/utils";
+import { WalletButton } from "../WalletButton";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 export function NavigationBar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const { isConnected } = useAppKitAccount();
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -27,7 +29,7 @@ export function NavigationBar() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
           ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-lg"
-          : "bg-transparent"
+          : "bg-transparent",
       )}
     >
       <div className="container mx-auto px-4 py-4">
@@ -57,20 +59,27 @@ export function NavigationBar() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link to="/dashboard" className="hidden sm:block">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-electric group">
-                Launch App
-                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-            
+            <WalletButton />
+            {isConnected && (
+              <Link to="/dashboard" className="hidden sm:block">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-electric group">
+                  Launch App
+                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            )}
+
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 hover:bg-secondary/50 rounded-lg transition-colors"
               aria-label="Toggle mobile menu"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -94,12 +103,18 @@ export function NavigationBar() {
                   {item}
                 </a>
               ))}
-              <Link to="/dashboard" className="sm:hidden">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Launch App
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+
+              <div>
+                <WalletButton />
+                {isConnected && (
+                  <Link to="/dashboard" className="sm:hidden">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                      Launch App
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </motion.nav>
         )}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
@@ -13,13 +13,19 @@ import {
   Download,
   Eye,
   EyeOff,
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useTradingStore } from '@/stores';
-import { formatCurrency, formatPercent, formatCompact } from '@/utils/formatters';
-import { cn } from '@/lib/utils';
+  Upload,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useTradingStore, useComputedStats } from "@/stores";
+import {
+  formatCurrency,
+  formatPercent,
+  formatCompact,
+} from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 // ============================================================================
 // Types
@@ -38,7 +44,14 @@ interface StatCardProps {
 // Sub-Components
 // ============================================================================
 
-function StatCard({ label, value, icon: Icon, positive, showTrend, loading }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  positive,
+  showTrend,
+  loading,
+}: StatCardProps) {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -46,10 +59,12 @@ function StatCard({ label, value, icon: Icon, positive, showTrend, loading }: St
       className="p-3 sm:p-4 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/30 transition-all duration-300 group"
     >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
-        {Icon && <Icon className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />}
+        {Icon && (
+          <Icon className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
+        )}
         <span className="font-medium">{label}</span>
       </div>
-      
+
       {loading ? (
         <div className="h-6 bg-border/30 rounded animate-pulse" />
       ) : (
@@ -58,8 +73,8 @@ function StatCard({ label, value, icon: Icon, positive, showTrend, loading }: St
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className={cn(
-            'font-mono font-semibold text-base sm:text-lg flex items-center gap-1',
-            showTrend && (positive ? 'text-success' : 'text-destructive')
+            "font-mono font-semibold text-base sm:text-lg flex items-center gap-1",
+            showTrend && (positive ? "text-success" : "text-destructive"),
           )}
         >
           {showTrend && (
@@ -85,21 +100,24 @@ function QuickActionButton({
   icon: Icon,
   label,
   onClick,
-  variant = 'outline',
+  variant = "outline",
   className,
+  disabled,
 }: {
   icon: React.ElementType;
   label: string;
   onClick: () => void;
-  variant?: 'outline' | 'default';
+  variant?: "outline" | "default";
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <Button
       variant={variant}
       size="sm"
       onClick={onClick}
-      className={cn('gap-2 group', className)}
+      disabled={disabled}
+      className={cn("gap-2 group", className)}
     >
       <Icon className="h-4 w-4 transition-transform group-hover:scale-110" />
       <span className="hidden sm:inline">{label}</span>
@@ -112,20 +130,48 @@ function QuickActionButton({
 // ============================================================================
 
 export function PortfolioOverview() {
-  const { portfolio, agentStatus, toggleAgent, performanceMetrics } = useTradingStore();
+  const { 
+    portfolio, 
+    agentStatus,
+    performanceMetrics,
+  } = useTradingStore();
+  
+  const { avgAIConfidence } = useComputedStats();
+  const { isConnected, startAgent, stopAgent } = useWebSocket();
+  
   const [isValueVisible, setIsValueVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const isProfit = portfolio.dailyPnL >= 0;
-  const isActive = agentStatus.status === 'active';
+  const isActive = agentStatus.status === "active";
 
   const handleToggleAgent = async () => {
     setIsLoading(true);
     try {
-      await toggleAgent();
+      if (agentStatus.status === 'active') {
+        stopAgent();
+      } else {
+        startAgent();
+      }
     } finally {
-      setIsLoading(false);
+      // Reset loading after a brief delay
+      setTimeout(() => setIsLoading(false), 1000);
     }
+  };
+
+  const handleDeposit = () => {
+    // TODO: Open deposit modal
+    console.log("Open deposit modal");
+  };
+
+  const handleWithdraw = () => {
+    // TODO: Open withdraw modal
+    console.log("Open withdraw modal");
+  };
+
+  const handleSettings = () => {
+    // TODO: Navigate to settings or open modal
+    console.log("Open settings");
   };
 
   return (
@@ -135,25 +181,37 @@ export function PortfolioOverview() {
           {/* Header Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-xl font-display font-semibold">
                   Portfolio Overview
                 </h2>
                 <Badge
-                  variant={isActive ? 'default' : 'secondary'}
+                  variant={isActive ? "default" : "secondary"}
                   className={cn(
-                    'gap-1.5',
-                    isActive && 'bg-success/10 text-success border-success/20'
+                    "gap-1.5",
+                    isActive && "bg-success/10 text-success border-success/20",
+                    agentStatus.status === 'paused' && "bg-warning/10 text-warning border-warning/20",
+                    agentStatus.status === 'error' && "bg-destructive/10 text-destructive border-destructive/20",
                   )}
                 >
                   <span
                     className={cn(
-                      'w-1.5 h-1.5 rounded-full',
-                      isActive ? 'bg-success pulse-success' : 'bg-muted-foreground'
+                      "w-1.5 h-1.5 rounded-full",
+                      isActive && "bg-success pulse-success",
+                      agentStatus.status === 'paused' && "bg-warning",
+                      agentStatus.status === 'error' && "bg-destructive pulse-error",
                     )}
                   />
-                  {isActive ? 'Active' : 'Paused'}
+                  {agentStatus.status.charAt(0).toUpperCase() + agentStatus.status.slice(1)}
                 </Badge>
+                
+                {/* Connection indicator */}
+                {!isConnected && (
+                  <Badge variant="outline" className="gap-1.5 bg-warning/10 text-warning border-warning/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                    Offline
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -164,7 +222,7 @@ export function PortfolioOverview() {
                 size="sm"
                 onClick={() => setIsValueVisible(!isValueVisible)}
                 className="h-8 w-8 p-0"
-                aria-label={isValueVisible ? 'Hide balances' : 'Show balances'}
+                aria-label={isValueVisible ? "Hide balances" : "Show balances"}
               >
                 {isValueVisible ? (
                   <Eye className="h-4 w-4" />
@@ -180,7 +238,7 @@ export function PortfolioOverview() {
             <p className="text-sm text-muted-foreground font-medium">
               Total Portfolio Value
             </p>
-            
+
             <AnimatePresence mode="wait">
               {isValueVisible ? (
                 <motion.div
@@ -223,10 +281,10 @@ export function PortfolioOverview() {
               >
                 <div
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
                     isProfit
-                      ? 'bg-success/10 text-success hover:bg-success/20'
-                      : 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+                      ? "bg-success/10 text-success hover:bg-success/20"
+                      : "bg-destructive/10 text-destructive hover:bg-destructive/20",
                   )}
                 >
                   {isProfit ? (
@@ -235,14 +293,16 @@ export function PortfolioOverview() {
                     <TrendingDown className="h-4 w-4" />
                   )}
                   <span className="font-mono font-semibold">
-                    {isProfit ? '+' : ''}
+                    {isProfit ? "+" : ""}
                     {formatCurrency(portfolio.dailyPnL)}
                   </span>
                   <span className="text-xs opacity-80">
                     ({formatPercent(portfolio.dailyPnLPercent)})
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">24h change</span>
+                <span className="text-xs text-muted-foreground">
+                  24h change
+                </span>
               </motion.div>
             )}
           </div>
@@ -253,47 +313,70 @@ export function PortfolioOverview() {
               label="Win Rate"
               value={formatPercent(performanceMetrics.winRate, 1)}
               icon={Activity}
-              positive
+              positive={performanceMetrics.winRate >= 50}
             />
             <StatCard
               label="Total Trades"
-              value={formatCompact(performanceMetrics.totalTrades)}
+              value={formatCompact(agentStatus.totalTrades || performanceMetrics.totalTrades)}
               icon={Zap}
             />
             <StatCard
               label="Weekly P&L"
-              value={isValueVisible ? formatCurrency(portfolio.weeklyPnL) : '••••'}
+              value={
+                isValueVisible ? formatCurrency(portfolio.weeklyPnL) : "••••"
+              }
               positive={portfolio.weeklyPnL >= 0}
               showTrend
               loading={!isValueVisible}
             />
             <StatCard
               label="Monthly P&L"
-              value={isValueVisible ? formatCurrency(portfolio.monthlyPnL) : '••••'}
+              value={
+                isValueVisible ? formatCurrency(portfolio.monthlyPnL) : "••••"
+              }
               positive={portfolio.monthlyPnL >= 0}
               showTrend
               loading={!isValueVisible}
             />
           </div>
 
+          {/* AI Insights Row (NEW) */}
+          {avgAIConfidence > 0 && (
+            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">AI Performance</p>
+                  <p className="text-sm font-medium">
+                    Average Confidence: <span className="font-mono text-primary">{avgAIConfidence.toFixed(0)}%</span>
+                  </p>
+                </div>
+                {agentStatus.aiEngine && (
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                    {agentStatus.aiEngine}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
             <Button
-              variant={isActive ? 'outline' : 'default'}
+              variant={isActive ? "outline" : "default"}
               size="sm"
               onClick={handleToggleAgent}
-              disabled={isLoading}
+              disabled={isLoading || !isConnected}
               className={cn(
-                'gap-2 font-medium',
+                "gap-2 font-medium",
                 isActive
-                  ? 'border-warning text-warning hover:bg-warning/10'
-                  : 'bg-success hover:bg-success/90 text-success-foreground'
+                  ? "border-warning text-warning hover:bg-warning/10"
+                  : "bg-success hover:bg-success/90 text-success-foreground",
               )}
             >
               {isLoading ? (
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 >
                   <Activity className="h-4 w-4" />
                 </motion.div>
@@ -302,25 +385,25 @@ export function PortfolioOverview() {
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              <span>{isActive ? 'Pause Agent' : 'Resume Agent'}</span>
+              <span>{isActive ? "Pause Agent" : "Resume Agent"}</span>
             </Button>
 
             <QuickActionButton
               icon={Download}
               label="Deposit"
-              onClick={() => console.log('Deposit')}
+              onClick={handleDeposit}
             />
 
             <QuickActionButton
-              icon={ArrowUpRight}
+              icon={Upload}
               label="Withdraw"
-              onClick={() => console.log('Withdraw')}
+              onClick={handleWithdraw}
             />
 
             <QuickActionButton
               icon={Settings}
               label="Settings"
-              onClick={() => console.log('Settings')}
+              onClick={handleSettings}
               className="ml-auto"
             />
           </div>
