@@ -14,7 +14,7 @@ if (!projectId) {
 }
 
 // Define Cronos networks
-export const networks = [cronos, cronosTestnet];
+export const networks = [cronosTestnet];
 
 // ============================================================================
 // Wagmi Configuration

@@ -36,7 +36,7 @@ export function useVaultBalance(tokenAddress?: Address) {
   const { data, isLoading, refetch } = useReadContract({
     address: contracts.vault,
     abi: STRATEGY_VAULT_ABI,
-    functionName: 'balances',
+    functionName: 'totalBalances',
     args: tokenAddress ? [tokenAddress] : undefined,
     query: {
       enabled: !!tokenAddress && !!address,
@@ -67,7 +67,7 @@ export function useVaultDeposit() {
   });
 
   const deposit = useCallback(
-    async (tokenAddress: Address, amount: string, decimals: number = 6) => {
+    async (tokenAddress: Address, amount: string, decimals: number = 18) => {
       if (!address) {
         toast.error('Please connect your wallet');
         return;
@@ -86,7 +86,7 @@ export function useVaultDeposit() {
         const amountBigInt = parseUnits(amount, decimals);
 
         // Step 1: Approve token
-        toast.info('Approving token spend...');
+        toast.loading('Approving token spend...', { id: 'deposit-approval' });
         const approveTx = await writeContractAsync({
           address: tokenAddress,
           abi: ERC20_ABI,
@@ -95,13 +95,14 @@ export function useVaultDeposit() {
         });
 
         setState((prev) => ({ ...prev, isConfirming: true, txHash: approveTx }));
-        toast.info('Waiting for approval confirmation...');
+        toast.loading('Waiting for approval confirmation...', { id: 'deposit-approval' });
 
         // Wait for approval (simplified - in production use useWaitForTransactionReceipt)
         await new Promise((resolve) => setTimeout(resolve, 3000));
+        toast.success('Token approved!', { id: 'deposit-approval' });
 
         // Step 2: Deposit
-        toast.info('Depositing to vault...');
+        toast.loading('Depositing to vault...', { id: 'deposit-tx' });
         const depositTx = await writeContractAsync({
           address: contracts.vault,
           abi: STRATEGY_VAULT_ABI,
@@ -118,7 +119,7 @@ export function useVaultDeposit() {
           txHash: depositTx,
         });
 
-        toast.success(`Successfully deposited ${amount} USDC`);
+        toast.success(`💰 Deposited ${amount} USDC to vault`, { id: 'deposit-tx' });
         return depositTx;
       } catch (error) {
         const err = error as Error;
@@ -130,7 +131,14 @@ export function useVaultDeposit() {
           error: err,
         });
 
-        toast.error(err.message || 'Deposit failed');
+        // Better error messages
+        const errorMessage = err.message?.includes('user rejected')
+          ? 'Transaction cancelled'
+          : err.message?.includes('insufficient funds')
+          ? 'Insufficient balance for transaction'
+          : 'Deposit failed - please try again';
+
+        toast.error(errorMessage, { id: 'deposit-tx' });
         throw error;
       }
     },
@@ -187,7 +195,7 @@ export function useVaultWithdraw() {
         const contracts = getContracts();
         const amountBigInt = parseUnits(amount, decimals);
 
-        toast.info('Withdrawing from vault...');
+        toast.loading('Processing withdrawal...', { id: 'withdraw-tx' });
         const tx = await writeContractAsync({
           address: contracts.vault,
           abi: STRATEGY_VAULT_ABI,
@@ -204,7 +212,7 @@ export function useVaultWithdraw() {
           txHash: tx,
         });
 
-        toast.success(`Successfully withdrawn ${amount} USDC`);
+        toast.success(`💸 Withdrawn ${amount} USDC to wallet`, { id: 'withdraw-tx' });
         return tx;
       } catch (error) {
         const err = error as Error;
@@ -216,7 +224,15 @@ export function useVaultWithdraw() {
           error: err,
         });
 
-        toast.error(err.message || 'Withdrawal failed');
+        const errorMessage = err.message?.includes('user rejected')
+          ? 'Transaction cancelled'
+          : err.message?.includes('Ownable: caller is not the owner')
+          ? 'Only vault owner can withdraw'
+          : err.message?.includes('insufficient funds')
+          ? 'Insufficient vault balance'
+          : 'Withdrawal failed - please try again';
+
+        toast.error(errorMessage, { id: 'withdraw-tx' });
         throw error;
       }
     },
@@ -259,7 +275,7 @@ export function useRouterConfig() {
   const { data: settlerAddress } = useReadContract({
     address: contracts.router,
     abi: ARBITRACE_ROUTER_ABI,
-    functionName: 'x402Settler',
+    functionName: 'settler',
   });
 
   const { data: ownerAddress } = useReadContract({
@@ -346,9 +362,7 @@ export function useTokenBalance(tokenAddress?: Address, userAddress?: Address) {
       refetchInterval: 10000,
     },
   });
-  console.log('tokenAddress', tokenAddress)
-  console.log('data', data)
-  console.log('userAddress', userAddress)
+
   return {
     balance: data || 0n,
     balanceFormatted: data ? formatUnits(data, 18) : '0',

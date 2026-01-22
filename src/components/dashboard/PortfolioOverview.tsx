@@ -392,7 +392,7 @@ export function PortfolioOverview() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
-              <Button
+              {/* <Button
                 variant={isActive ? "outline" : "default"}
                 size="sm"
                 onClick={handleToggleAgent}
@@ -417,7 +417,7 @@ export function PortfolioOverview() {
                   <Play className="h-4 w-4" />
                 )}
                 <span>{isActive ? "Pause Agent" : "Resume Agent"}</span>
-              </Button>
+              </Button> */}
 
               <QuickActionButton
                 icon={Download}

@@ -163,7 +163,7 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       console.warn(`Trade ${id} not found for update`);
       return state;
     }),
-    
+
   setOpportunities: (opportunities) => set({ opportunities }),
 
   addOpportunity: (opportunity) =>
@@ -221,9 +221,9 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       const avgConfidence =
         recentDecisions.length > 0
           ? recentDecisions.reduce(
-              (sum, o) => sum + (o.aiDecision?.confidence || 0),
-              0,
-            ) / recentDecisions.length
+            (sum, o) => sum + (o.aiDecision?.confidence || 0),
+            0,
+          ) / recentDecisions.length
           : decision.confidence;
 
       return {
@@ -451,28 +451,36 @@ interface WalletState {
   disconnect: () => void;
 }
 
+import { webSocketService } from '@/services/api/websocket';
+
 export const useWalletStore = create<WalletState>((set) => ({
   isConnected: false,
   address: null,
   chainId: null,
   balance: null,
 
-  setConnected: (connected, address, chainId) =>
+  setConnected: (connected, address, chainId) => {
+    if (connected && address) {
+      webSocketService.connectWallet(address);
+    }
     set({
       isConnected: connected,
       address: address || null,
       chainId: chainId || null,
-    }),
+    });
+  },
 
   setBalance: (balance) => set({ balance }),
 
-  disconnect: () =>
+  disconnect: () => {
+    webSocketService.disconnectWallet();
     set({
       isConnected: false,
       address: null,
       chainId: null,
       balance: null,
-    }),
+    });
+  },
 }));
 
 // ============================================
@@ -503,7 +511,7 @@ export function useComputedStats() {
   const avgAIConfidence =
     recentTrades.length > 0
       ? recentTrades.reduce((sum, t) => sum + (t.aiConfidence || 0), 0) /
-        recentTrades.length
+      recentTrades.length
       : 0;
 
   return {

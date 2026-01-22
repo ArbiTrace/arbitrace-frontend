@@ -5,9 +5,9 @@
 import { useEffect } from 'react';
 import { useWatchContractEvent } from 'wagmi';
 import { formatUnits } from 'viem';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { getContracts } from '../contracts/config';
-import { STRATEGY_VAULT_ABI, ARBITRACE_ROUTER_ABI, X402_SETTLER_ABI } from '../contracts/abis';
+import { VAULT_ABI, ROUTER_ABI, X402_SETTLER_ABI } from '../contracts/abis';
 import { useTradingStore } from '../stores';
 
 // ============================================================================
@@ -19,26 +19,19 @@ import { useTradingStore } from '../stores';
  */
 export function useVaultDepositEvents() {
   const contracts = getContracts();
-  const addNotification = useTradingStore((state) => state.addNotification);
 
   useWatchContractEvent({
     address: contracts.vault,
-    abi: STRATEGY_VAULT_ABI,
+    abi: VAULT_ABI,
     eventName: 'Deposit',
     onLogs(logs) {
       logs.forEach((log) => {
-        const { user, amount } = log.args;
-        const formattedAmount = formatUnits(amount || 0n, 18);
+        const { user, token, amount } = log.args;
+        const formattedAmount = formatUnits(amount || 0n, 6);
 
-        toast.success(`Deposited ${formattedAmount} USDC to vault`, {
-          description: `Transaction: ${log.transactionHash?.slice(0, 10)}...`,
-        });
-
-        addNotification?.({
-          id: log.transactionHash || `deposit-${Date.now()}`,
-          type: 'success',
-          message: `Deposited ${formattedAmount} USDC`,
-          timestamp: Date.now(),
+        toast.success(`💰 Deposited ${formattedAmount} USDC to vault`, {
+          icon: '✅',
+          duration: 4000,
         });
       });
     },
@@ -50,26 +43,19 @@ export function useVaultDepositEvents() {
  */
 export function useVaultWithdrawalEvents() {
   const contracts = getContracts();
-  const addNotification = useTradingStore((state) => state.addNotification);
 
   useWatchContractEvent({
     address: contracts.vault,
-    abi: STRATEGY_VAULT_ABI,
+    abi: VAULT_ABI,
     eventName: 'Withdrawal',
     onLogs(logs) {
       logs.forEach((log) => {
-        const { user, amount } = log.args;
-        const formattedAmount = formatUnits(amount || 0n, 18);
+        const { user, token, amount } = log.args;
+        const formattedAmount = formatUnits(amount || 0n, 6);
 
-        toast.success(`Withdrawn ${formattedAmount} USDC from vault`, {
-          description: `Transaction: ${log.transactionHash?.slice(0, 10)}...`,
-        });
-
-        addNotification?.({
-          id: log.transactionHash || `withdraw-${Date.now()}`,
-          type: 'success',
-          message: `Withdrawn ${formattedAmount} USDC`,
-          timestamp: Date.now(),
+        toast.success(`💸 Withdrawn ${formattedAmount} USDC from vault`, {
+          icon: '✅',
+          duration: 4000,
         });
       });
     },
@@ -89,34 +75,51 @@ export function useArbitrageExecutedEvents() {
 
   useWatchContractEvent({
     address: contracts.router,
-    abi: ARBITRACE_ROUTER_ABI,
+    abi: ROUTER_ABI,
     eventName: 'ArbitrageExecuted',
     onLogs(logs) {
       logs.forEach((log) => {
         const { tokenIn, tokenOut, amountIn, amountOut, profit } = log.args;
         
-        const formattedAmountIn = formatUnits(amountIn || 0n, 18);
+        const formattedAmountIn = formatUnits(amountIn || 0n, 6);
         const formattedAmountOut = formatUnits(amountOut || 0n, 18);
-        const formattedProfit = formatUnits(profit || 0n, 18);
+        const formattedProfit = formatUnits(profit || 0n, 6);
 
-        // Add trade to store
+        // Add trade to store (matches your existing Trade type)
         addTrade?.({
           id: log.transactionHash || `trade-${Date.now()}`,
           timestamp: Date.now(),
+          pair: 'CRO/USDC',
           type: 'arbitrage',
-          tokenIn: tokenIn || '0x0',
-          tokenOut: tokenOut || '0x0',
           amountIn: formattedAmountIn,
+          amountInToken: 'USDC',
           amountOut: formattedAmountOut,
+          amountOutToken: 'CRO',
           profit: formattedProfit,
+          profitPercent: (parseFloat(formattedProfit) / parseFloat(formattedAmountIn)) * 100,
           status: 'success',
-          txHash: log.transactionHash,
-          blockNumber: log.blockNumber,
+          txHash: log.transactionHash || '',
+          aiConfidence: 0, // Will be updated by WebSocket if AI data available
+          aiReasoning: '',
+          executionTime: 0,
+          slippage: 0,
+          gasUsed: 0,
+          gasCost: '0',
         });
 
-        toast.success(`Arbitrage executed: +${formattedProfit} USDC profit`, {
-          description: `Traded ${formattedAmountIn} USDC → ${formattedAmountOut} WCRO`,
-        });
+        // Show profit notification
+        const profitValue = parseFloat(formattedProfit);
+        if (profitValue > 0) {
+          toast.success(`🎯 Arbitrage profit: +$${formattedProfit}`, {
+            icon: '💰',
+            duration: 5000,
+          });
+        } else {
+          toast(`⚡ Trade executed: ${formattedAmountIn} USDC → ${formattedAmountOut} CRO`, {
+            icon: '🔄',
+            duration: 4000,
+          });
+        }
       });
     },
   });
@@ -127,26 +130,19 @@ export function useArbitrageExecutedEvents() {
  */
 export function useFundsSettledEvents() {
   const contracts = getContracts();
-  const addNotification = useTradingStore((state) => state.addNotification);
 
   useWatchContractEvent({
     address: contracts.router,
-    abi: ARBITRACE_ROUTER_ABI,
+    abi: ROUTER_ABI,
     eventName: 'FundsSettled',
     onLogs(logs) {
       logs.forEach((log) => {
         const { token, amount, recipient } = log.args;
-        const formattedAmount = formatUnits(amount || 0n, 18);
+        const formattedAmount = formatUnits(amount || 0n, 6);
 
-        toast.success(`Funds settled: ${formattedAmount} USDC`, {
-          description: `Sent to ${recipient?.slice(0, 10)}...`,
-        });
-
-        addNotification?.({
-          id: log.transactionHash || `settlement-${Date.now()}`,
-          type: 'success',
-          message: `Settled ${formattedAmount} USDC`,
-          timestamp: Date.now(),
+        toast.success(`🚚 Funds settled: ${formattedAmount} USDC`, {
+          icon: '✅',
+          duration: 4000,
         });
       });
     },
@@ -161,22 +157,29 @@ export function useSwapExecutedEvents() {
 
   useWatchContractEvent({
     address: contracts.router,
-    abi: ARBITRACE_ROUTER_ABI,
+    abi: ROUTER_ABI,
     eventName: 'SwapExecuted',
     onLogs(logs) {
       logs.forEach((log) => {
         const { dex, tokenIn, tokenOut, amountIn, amountOut } = log.args;
         
-        const formattedAmountIn = formatUnits(amountIn || 0n, 18);
+        const formattedAmountIn = formatUnits(amountIn || 0n, 6);
         const formattedAmountOut = formatUnits(amountOut || 0n, 18);
 
-        console.log('Swap executed:', {
+        console.log('🔄 Swap executed:', {
           dex,
           tokenIn,
           tokenOut,
           amountIn: formattedAmountIn,
           amountOut: formattedAmountOut,
         });
+
+        // Optional: Show toast for large swaps
+        if (parseFloat(formattedAmountIn) >= 1000) {
+          toast(`🔄 Large swap: ${formattedAmountIn} USDC → ${formattedAmountOut} CRO`, {
+            duration: 3000,
+          });
+        }
       });
     },
   });
@@ -191,7 +194,6 @@ export function useSwapExecutedEvents() {
  */
 export function useSettlementTriggeredEvents() {
   const contracts = getContracts();
-  const addNotification = useTradingStore((state) => state.addNotification);
 
   useWatchContractEvent({
     address: contracts.x402Settler,
@@ -200,17 +202,17 @@ export function useSettlementTriggeredEvents() {
     onLogs(logs) {
       logs.forEach((log) => {
         const { nonce, recipient, token, amount } = log.args;
-        const formattedAmount = formatUnits(amount || 0n, 18);
+        const formattedAmount = formatUnits(amount || 0n, 6);
 
-        toast.success(`Settlement triggered: ${formattedAmount} USDC`, {
-          description: `Nonce: ${nonce?.slice(0, 10)}...`,
+        toast.success(`⚡ x402 Settlement: ${formattedAmount} USDC`, {
+          icon: '🤖',
+          duration: 5000,
         });
 
-        addNotification?.({
-          id: log.transactionHash || `settlement-trigger-${Date.now()}`,
-          type: 'info',
-          message: `Settlement triggered for ${formattedAmount} USDC`,
-          timestamp: Date.now(),
+        console.log('✅ Settlement triggered:', {
+          nonce: nonce?.slice(0, 10) + '...',
+          recipient: recipient?.slice(0, 10) + '...',
+          amount: formattedAmount,
         });
       });
     },
@@ -231,13 +233,14 @@ export function useAgentUpdatedEvents() {
       logs.forEach((log) => {
         const { previousAgent, newAgent } = log.args;
 
-        toast.info('AI Agent updated', {
-          description: `New agent: ${newAgent?.slice(0, 10)}...`,
+        toast(`🤖 AI Agent updated`, {
+          icon: 'ℹ️',
+          duration: 6000,
         });
 
-        console.log('Agent updated:', {
-          previousAgent,
-          newAgent,
+        console.log('🔄 Agent updated:', {
+          previousAgent: previousAgent?.slice(0, 10) + '...',
+          newAgent: newAgent?.slice(0, 10) + '...',
         });
       });
     },

@@ -208,7 +208,7 @@ function TradeDetailsRow({ trade }: { trade: Trade }) {
               </code>
               <CopyButton text={trade.txHash} label="transaction hash" />
               <a
-                href={`https://cronoscan.com/tx/${trade.txHash}`}
+                href={`https://explorer.cronos.org/testnet/tx/${trade.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:text-primary/80 transition-colors"

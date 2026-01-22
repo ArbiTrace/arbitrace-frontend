@@ -215,7 +215,7 @@ export function WalletButton({
         variant={variant === 'hero' ? 'default' : 'outline'}
         size={variant === 'hero' ? 'lg' : 'sm'}
         className={cn(
-          'gap-2 group',
+          'gap-2 group cursor-pointer',
           variant === 'default' &&
             'bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow-electric',
           variant === 'hero' &&

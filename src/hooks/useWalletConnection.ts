@@ -6,7 +6,7 @@ export function useWalletConnection() {
   const { address, isConnected, status } = useAppKitAccount();
   const { chainId } = useAppKitNetwork();
 
-  const isCorrectNetwork = chainId === 25 || chainId === 338;
+  const isCorrectNetwork = chainId === 338;
 
   // Show connection status toasts
   useEffect(() => {
