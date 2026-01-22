@@ -175,9 +175,8 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative">
-            <Zap className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
-            <div className="absolute inset-0 blur-md bg-primary/30 rounded-full transition-opacity group-hover:opacity-50" />
+          <div >
+            <img src="/logo.png" alt="ArbiTrace Logo" className="w-16 h-16" />
           </div>
           <span className="font-display text-xl font-bold text-gradient-cyan">
             ArbiTrace
