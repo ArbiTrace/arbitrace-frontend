@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useTradingStore } from '@/stores';
 import toast from 'react-hot-toast';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+const WS_URL = import.meta.env.VITE_WS_URL || 'https://nt59g9mv-3001.inc1.devtunnels.ms/';
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);

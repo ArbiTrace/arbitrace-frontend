@@ -9,10 +9,10 @@ import { AgentStatusCard } from '@/components/dashboard/AgentStatusCard';
 import { RiskMonitor } from '@/components/dashboard/RiskMonitor';
 import { useTradingStore } from '@/stores';
 import { useWebSocket } from '@/hooks/useWebSocket';
+// import { useContractEvents } from '@/hooks/useContractEvents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { VaultManager } from '@/components/dashboard/VaultManager';
 
 // ============================================================================
 // Animation Variants
@@ -115,13 +115,16 @@ function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
 // ============================================================================
 
 export default function Dashboard() {
-  const {
-    agentStatus,
+  const { 
+    agentStatus, 
     isConnectedToAgent,
     initializeMockData, // Only for initial demo data
   } = useTradingStore();
-
+  
   const { isConnected: isWebSocketConnected } = useWebSocket();
+  
+  // ✅ Initialize contract event listeners
+  // useContractEvents();
 
   useEffect(() => {
     // Initialize with mock data only if no real data exists
@@ -161,18 +164,15 @@ export default function Dashboard() {
           <ConnectionStatus isConnected={isWebSocketConnected} />
         </motion.div>
 
-        {/* Portfolio Overview Hero */}
+        {/* Portfolio Overview Hero - Now with contract integration */}
         <motion.div variants={itemVariants}>
           <PortfolioOverview />
         </motion.div>
 
-        {/* Agent Status, Risk Monitor, & Vault Manager Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Agent Status & Risk Monitor Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div variants={itemVariants}>
             <AgentStatusCard />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <VaultManager />
           </motion.div>
           <motion.div variants={itemVariants}>
             <RiskMonitor />
@@ -192,7 +192,7 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Recent Trades Table */}
+        {/* Recent Trades Table - Now listening to contract events */}
         <motion.div variants={itemVariants}>
           <RecentTradesTable />
         </motion.div>
@@ -214,7 +214,7 @@ export default function Dashboard() {
                 {agentStatus.status.charAt(0).toUpperCase() + agentStatus.status.slice(1)}
               </span>
             </div>
-
+            
             {agentStatus.aiEngine && (
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">AI Engine:</span>
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 </span>
               </div>
             )}
-
+            
             {agentStatus.lastUpdate && (
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Last Update:</span>

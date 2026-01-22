@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Use environment variable or default to localhost:3001
-const AGENT_URL = import.meta.env.VITE_AGENT_URL || 'http://localhost:3001';
+const AGENT_URL = import.meta.env.VITE_AGENT_URL || 'https://nt59g9mv-3001.inc1.devtunnels.ms/';
 
 class WebSocketService {
     private socket: Socket | null = null;

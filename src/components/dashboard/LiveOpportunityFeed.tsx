@@ -69,7 +69,7 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
   const isExecuting = opportunity.status === 'executing';
   const isCompleted = opportunity.status === 'completed';
   const isRejected = opportunity.status === 'rejected';
-
+  
   return (
     <motion.div
       layout
@@ -125,7 +125,7 @@ function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
         <div>
           <p className="text-xs text-muted-foreground mb-0.5">Spread</p>
           <p className="font-mono font-semibold text-success">
-            {formatPercent(opportunity.spread)}
+            {formatPercent(opportunity.spread, 2)}
           </p>
         </div>
         <div>

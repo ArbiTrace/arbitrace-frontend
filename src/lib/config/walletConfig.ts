@@ -49,14 +49,6 @@ export const modal = createAppKit({
     socials: ['google', 'github', 'apple'], // Social login options
     emailShowWallets: true, // Show wallet options in email flow
   },
-  themeMode: 'dark', // 'light' | 'dark' | 'auto'
-  themeVariables: {
-    '--w3m-font-family': 'Inter, system-ui, sans-serif',
-    '--w3m-accent': 'hsl(var(--color-primary))', // Electric cyan
-    '--w3m-color-mix': 'hsl(var(--color-background))',
-    '--w3m-color-mix-strength': 20,
-    '--w3m-border-radius-master': '12px',
-  },
   allWallets: 'SHOW', // Show all available wallets
   featuredWalletIds: [
     'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
