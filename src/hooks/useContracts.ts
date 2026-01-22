@@ -2,22 +2,12 @@
 // ArbiTrace Contract Hooks
 // ============================================================================
 
-import {
-  useAccount,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
-import { parseUnits, formatUnits, Address } from "viem";
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
-import { getContracts, getTokens } from "../contracts/config";
-import {
-  STRATEGY_VAULT_ABI,
-  ARBITRACE_ROUTER_ABI,
-  X402_SETTLER_ABI,
-  ERC20_ABI,
-} from "../contracts/abis";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseUnits, formatUnits, Address } from 'viem';
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { getContracts, getTokens } from '../contracts/config';
+import { STRATEGY_VAULT_ABI, ARBITRACE_ROUTER_ABI, X402_SETTLER_ABI, ERC20_ABI } from '../contracts/abis';
 
 // ============================================================================
 // Types
@@ -46,7 +36,7 @@ export function useVaultBalance(tokenAddress?: Address) {
   const { data, isLoading, refetch } = useReadContract({
     address: contracts.vault,
     abi: STRATEGY_VAULT_ABI,
-    functionName: "totalBalances",
+    functionName: 'totalBalances',
     args: tokenAddress ? [tokenAddress] : undefined,
     query: {
       enabled: !!tokenAddress && !!address,
@@ -56,7 +46,7 @@ export function useVaultBalance(tokenAddress?: Address) {
 
   return {
     balance: data || 0n,
-    balanceFormatted: data ? formatUnits(data, 18) : "0", // USDC has 18 decimals
+    balanceFormatted: data ? formatUnits(data, 18) : '0', // USDC has 18 decimals
     isLoading,
     refetch,
   };
@@ -77,9 +67,9 @@ export function useVaultDeposit() {
   });
 
   const deposit = useCallback(
-    async (tokenAddress: Address, amount: string, decimals: number = 6) => {
+    async (tokenAddress: Address, amount: string, decimals: number = 18) => {
       if (!address) {
-        toast.error("Please connect your wallet");
+        toast.error('Please connect your wallet');
         return;
       }
 
@@ -96,30 +86,27 @@ export function useVaultDeposit() {
         const amountBigInt = parseUnits(amount, decimals);
 
         // Step 1: Approve token
-        toast.info("Approving token spend...");
+        toast.loading('Approving token spend...', { id: 'deposit-approval' });
         const approveTx = await writeContractAsync({
           address: tokenAddress,
           abi: ERC20_ABI,
-          functionName: "approve",
+          functionName: 'approve',
           args: [contracts.vault, amountBigInt],
         });
 
-        setState((prev) => ({
-          ...prev,
-          isConfirming: true,
-          txHash: approveTx,
-        }));
-        toast.info("Waiting for approval confirmation...");
+        setState((prev) => ({ ...prev, isConfirming: true, txHash: approveTx }));
+        toast.loading('Waiting for approval confirmation...', { id: 'deposit-approval' });
 
         // Wait for approval (simplified - in production use useWaitForTransactionReceipt)
         await new Promise((resolve) => setTimeout(resolve, 3000));
+        toast.success('Token approved!', { id: 'deposit-approval' });
 
         // Step 2: Deposit
-        toast.info("Depositing to vault...");
+        toast.loading('Depositing to vault...', { id: 'deposit-tx' });
         const depositTx = await writeContractAsync({
           address: contracts.vault,
           abi: STRATEGY_VAULT_ABI,
-          functionName: "deposit",
+          functionName: 'deposit',
           args: [tokenAddress, amountBigInt],
         });
 
@@ -132,7 +119,7 @@ export function useVaultDeposit() {
           txHash: depositTx,
         });
 
-        toast.success(`Successfully deposited ${amount} USDC`);
+        toast.success(`💰 Deposited ${amount} USDC to vault`, { id: 'deposit-tx' });
         return depositTx;
       } catch (error) {
         const err = error as Error;
@@ -144,11 +131,18 @@ export function useVaultDeposit() {
           error: err,
         });
 
-        toast.error(err.message || "Deposit failed");
+        // Better error messages
+        const errorMessage = err.message?.includes('user rejected')
+          ? 'Transaction cancelled'
+          : err.message?.includes('insufficient funds')
+          ? 'Insufficient balance for transaction'
+          : 'Deposit failed - please try again';
+
+        toast.error(errorMessage, { id: 'deposit-tx' });
         throw error;
       }
     },
-    [address, writeContractAsync],
+    [address, writeContractAsync]
   );
 
   const reset = useCallback(() => {
@@ -185,7 +179,7 @@ export function useVaultWithdraw() {
   const withdraw = useCallback(
     async (tokenAddress: Address, amount: string, decimals: number = 18) => {
       if (!address) {
-        toast.error("Please connect your wallet");
+        toast.error('Please connect your wallet');
         return;
       }
 
@@ -201,11 +195,11 @@ export function useVaultWithdraw() {
         const contracts = getContracts();
         const amountBigInt = parseUnits(amount, decimals);
 
-        toast.info("Withdrawing from vault...");
+        toast.loading('Processing withdrawal...', { id: 'withdraw-tx' });
         const tx = await writeContractAsync({
           address: contracts.vault,
           abi: STRATEGY_VAULT_ABI,
-          functionName: "withdraw",
+          functionName: 'withdraw',
           args: [tokenAddress, amountBigInt],
         });
 
@@ -218,7 +212,7 @@ export function useVaultWithdraw() {
           txHash: tx,
         });
 
-        toast.success(`Successfully withdrawn ${amount} USDC`);
+        toast.success(`💸 Withdrawn ${amount} USDC to wallet`, { id: 'withdraw-tx' });
         return tx;
       } catch (error) {
         const err = error as Error;
@@ -230,11 +224,19 @@ export function useVaultWithdraw() {
           error: err,
         });
 
-        toast.error(err.message || "Withdrawal failed");
+        const errorMessage = err.message?.includes('user rejected')
+          ? 'Transaction cancelled'
+          : err.message?.includes('Ownable: caller is not the owner')
+          ? 'Only vault owner can withdraw'
+          : err.message?.includes('insufficient funds')
+          ? 'Insufficient vault balance'
+          : 'Withdrawal failed - please try again';
+
+        toast.error(errorMessage, { id: 'withdraw-tx' });
         throw error;
       }
     },
-    [address, writeContractAsync],
+    [address, writeContractAsync]
   );
 
   const reset = useCallback(() => {
@@ -267,19 +269,19 @@ export function useRouterConfig() {
   const { data: vaultAddress } = useReadContract({
     address: contracts.router,
     abi: ARBITRACE_ROUTER_ABI,
-    functionName: "vault",
+    functionName: 'vault',
   });
 
   const { data: settlerAddress } = useReadContract({
     address: contracts.router,
     abi: ARBITRACE_ROUTER_ABI,
-    functionName: "x402Settler",
+    functionName: 'settler',
   });
 
   const { data: ownerAddress } = useReadContract({
     address: contracts.router,
     abi: ARBITRACE_ROUTER_ABI,
-    functionName: "owner",
+    functionName: 'owner',
   });
 
   return {
@@ -302,13 +304,13 @@ export function useSettlerConfig() {
   const { data: agentAddress } = useReadContract({
     address: contracts.x402Settler,
     abi: X402_SETTLER_ABI,
-    functionName: "agent",
+    functionName: 'agent',
   });
 
   const { data: routerAddress } = useReadContract({
     address: contracts.x402Settler,
     abi: X402_SETTLER_ABI,
-    functionName: "router",
+    functionName: 'router',
   });
 
   return {
@@ -326,7 +328,7 @@ export function useNonceStatus(nonce?: `0x${string}`) {
   const { data: isProcessed, refetch } = useReadContract({
     address: contracts.x402Settler,
     abi: X402_SETTLER_ABI,
-    functionName: "processedNonces",
+    functionName: 'processedNonces',
     args: nonce ? [nonce] : undefined,
     query: {
       enabled: !!nonce,
@@ -353,19 +355,17 @@ export function useTokenBalance(tokenAddress?: Address, userAddress?: Address) {
   const { data, isLoading, refetch } = useReadContract({
     address: tokenAddress,
     abi: ERC20_ABI,
-    functionName: "balanceOf",
+    functionName: 'balanceOf',
     args: targetAddress ? [targetAddress] : undefined,
     query: {
       enabled: !!tokenAddress && !!targetAddress,
       refetchInterval: 10000,
     },
   });
-  console.log("tokenAddress", tokenAddress);
-  console.log("data", data);
-  console.log("userAddress", userAddress);
+
   return {
     balance: data || 0n,
-    balanceFormatted: data ? formatUnits(data, 18) : "0",
+    balanceFormatted: data ? formatUnits(data, 18) : '0',
     isLoading,
     refetch,
   };
@@ -374,16 +374,13 @@ export function useTokenBalance(tokenAddress?: Address, userAddress?: Address) {
 /**
  * Hook for checking token allowance
  */
-export function useTokenAllowance(
-  tokenAddress?: Address,
-  spenderAddress?: Address,
-) {
+export function useTokenAllowance(tokenAddress?: Address, spenderAddress?: Address) {
   const { address } = useAccount();
 
   const { data, isLoading, refetch } = useReadContract({
     address: tokenAddress,
     abi: ERC20_ABI,
-    functionName: "allowance",
+    functionName: 'allowance',
     args: address && spenderAddress ? [address, spenderAddress] : undefined,
     query: {
       enabled: !!tokenAddress && !!spenderAddress && !!address,
@@ -392,7 +389,7 @@ export function useTokenAllowance(
 
   return {
     allowance: data || 0n,
-    allowanceFormatted: data ? formatUnits(data, 18) : "0",
+    allowanceFormatted: data ? formatUnits(data, 18) : '0',
     isLoading,
     refetch,
   };
@@ -412,12 +409,7 @@ export function useTokenApprove() {
   });
 
   const approve = useCallback(
-    async (
-      tokenAddress: Address,
-      spenderAddress: Address,
-      amount: string,
-      decimals: number = 18,
-    ) => {
+    async (tokenAddress: Address, spenderAddress: Address, amount: string, decimals: number = 18) => {
       setState({
         isPending: true,
         isConfirming: false,
@@ -429,11 +421,11 @@ export function useTokenApprove() {
       try {
         const amountBigInt = parseUnits(amount, decimals);
 
-        toast.info("Approving token spend...");
+        toast.info('Approving token spend...');
         const tx = await writeContractAsync({
           address: tokenAddress,
           abi: ERC20_ABI,
-          functionName: "approve",
+          functionName: 'approve',
           args: [spenderAddress, amountBigInt],
         });
 
@@ -446,7 +438,7 @@ export function useTokenApprove() {
           txHash: tx,
         });
 
-        toast.success("Token approval successful");
+        toast.success('Token approval successful');
         return tx;
       } catch (error) {
         const err = error as Error;
@@ -458,11 +450,11 @@ export function useTokenApprove() {
           error: err,
         });
 
-        toast.error(err.message || "Approval failed");
+        toast.error(err.message || 'Approval failed');
         throw error;
       }
     },
-    [writeContractAsync],
+    [writeContractAsync]
   );
 
   return {
@@ -482,16 +474,16 @@ export function useAllBalances() {
   const { address } = useAccount();
   const tokens = getTokens();
 
-  const { balance: usdcWalletBalance, refetch: refetchUsdcWallet } =
-    useTokenBalance(tokens.USDC, address);
-  const { balance: usdcVaultBalance, refetch: refetchUsdcVault } =
-    useVaultBalance(tokens.USDC);
-  const { balance: wcroWalletBalance, refetch: refetchWcroWallet } =
-    useTokenBalance(tokens.WCRO, address);
+  const { balance: usdcWalletBalance, refetch: refetchUsdcWallet } = useTokenBalance(
+    tokens.USDC,
+    address
+  );
+  const { balance: usdcVaultBalance, refetch: refetchUsdcVault } = useVaultBalance(tokens.USDC);
+  const { balance: wcroWalletBalance, refetch: refetchWcroWallet } = useTokenBalance(
+    tokens.WCRO,
+    address
+  );
 
-  console.log("usdcWalletBalance", usdcWalletBalance);
-  console.log("usdcVaultBalance", usdcVaultBalance);
-  console.log("wcroWalletBalance", wcroWalletBalance);
   const refetchAll = useCallback(() => {
     refetchUsdcWallet();
     refetchUsdcVault();

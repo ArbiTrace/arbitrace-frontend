@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { PortfolioOverview } from '@/components/dashboard/PortfolioOverview';
-import { LiveOpportunityFeed } from '@/components/dashboard/LiveOpportunityFeed';
-import { ProfitLossChart } from '@/components/dashboard/ProfitLossChart';
-import { RecentTradesTable } from '@/components/dashboard/RecentTradesTable';
-import { AgentStatusCard } from '@/components/dashboard/AgentStatusCard';
-import { RiskMonitor } from '@/components/dashboard/RiskMonitor';
+import { PortfolioOverview, RiskMonitor, RecentTradesTable, AgentStatusCard, LiveOpportunityFeed, ProfitLossChart } from '@/components/dashboard';
 import { useTradingStore } from '@/stores';
 import { useWebSocket } from '@/hooks/useWebSocket';
 // import { useContractEvents } from '@/hooks/useContractEvents';
