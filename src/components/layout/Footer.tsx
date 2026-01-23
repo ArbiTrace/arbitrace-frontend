@@ -33,7 +33,7 @@ export function Footer() {
               GitHub
             </a>
             <a
-              href="https://twitter.com/arbitrace"
+              href="https://x.com/CodeBlocker_52"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -45,7 +45,7 @@ export function Footer() {
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} ArbiTrace. Built on{" "}
-            <span className="text-foreground font-medium">Cronos</span>.
+            <span className="text-foreground font-medium">Cronos EVM</span>.
           </p>
         </div>
       </div>
