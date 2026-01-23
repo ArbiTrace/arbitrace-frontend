@@ -102,7 +102,7 @@ export function HeroSection() {
             asChild
           >
             <a
-              href="https://docs.arbitrace.ai"
+              href="https://github.com/ArbiTrace/arbitrace-protocol"
               target="_blank"
               rel="noopener noreferrer"
             >
