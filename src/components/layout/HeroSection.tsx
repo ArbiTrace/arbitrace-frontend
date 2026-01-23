@@ -51,7 +51,7 @@ export function HeroSection() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
             <span className="text-sm text-primary font-medium">
-              Now live on Cronos Mainnet
+              Now live on Cronos Testnet
             </span>
           </div>
         </motion.div>
