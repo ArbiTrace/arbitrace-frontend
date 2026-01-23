@@ -9,7 +9,7 @@ import { useAccount } from 'wagmi';
 import { useTradingStore } from '@/stores';
 import toast from 'react-hot-toast';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://agent-wkl4.onrender.com';
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
