@@ -17,7 +17,7 @@ export function Footer() {
           {/* Links */}
           <div className="flex items-center gap-6 text-sm">
             <a
-              href="https://docs.arbitrace.ai"
+              href="https://github.com/ArbiTrace/arbitrace-protocol"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
