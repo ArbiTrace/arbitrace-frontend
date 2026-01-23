@@ -8,9 +8,9 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-primary to-accent flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <div >
+            <img src="/logo.png" alt="ArbiTrace Logo" className="w-16 h-16" />
+          </div>
             <span className="font-display font-bold text-lg">ArbiTrace</span>
           </div>
 
